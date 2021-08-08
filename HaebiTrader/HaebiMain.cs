@@ -17,7 +17,7 @@ namespace HaebiTrader
         DataTable dtAccount = new DataTable();
 
         // 키움API 스크린 넘버
-        int screenNo = 1000;
+        int screenNo = 1100;
 
         public HaebiMain()
         {
@@ -30,6 +30,7 @@ namespace HaebiTrader
             axKHOpenAPI1.OnEventConnect         += AxKHOpenAPI1_OnEventConnect;
             axKHOpenAPI1.OnReceiveTrData        += AxKHOpenAPI1_OnReceiveTrData;
             axKHOpenAPI1.OnReceiveChejanData    += AxKHOpenAPI1_OnReceiveChejanData;
+            axKHOpenAPI1.OnReceiveRealData      += AxKHOpenAPI1_OnReceiveRealData;
 
             // 계좌 잔고정보 초기화
             initAccountOverall();
@@ -38,6 +39,30 @@ namespace HaebiTrader
             // 주문 콤보박스 세팅
             initOrderType();
             initTradeType();
+        }
+
+        // ----------------------------------------------------------------------------------------------------
+        // [API] 실시간데이터 이벤트 처리
+        // ----------------------------------------------------------------------------------------------------
+        private void AxKHOpenAPI1_OnReceiveRealData(object sender, AxKHOpenAPILib._DKHOpenAPIEvents_OnReceiveRealDataEvent e)
+        {
+            string js_jongmok = e.sRealKey; // 키(종목코드)
+            string js_data  =   e.sRealData; // 데이터
+
+            if (e.sRealType.Equals("주식체결"))
+            {
+                string js_price_che = axKHOpenAPI1.GetCommRealData(e.sRealKey, 10); // 체결가
+
+                // 종목 현재가 갱신
+                // 잔고 조회할때는 앞에 A가 붙어 나오고 여기 현재가 데이터는 숫자만 나온다... 뒤에 숫자 6자리만 사용 고려...
+                dtAccount.Select(string.Format("[C8] = 'A{0}'", js_jongmok))
+                    .ToList<DataRow>()
+                    .ForEach(r =>
+                    {
+                        // 현재가
+                        updatePrice(r, Convert.ToInt64(js_price_che.Replace("+", "").Replace("-", "")));
+                    });
+            }
         }
 
         // ----------------------------------------------------------------------------------------------------
@@ -59,11 +84,14 @@ namespace HaebiTrader
                 else if (orderState.Equals("체결"))
                 {
                     string jsName           = axKHOpenAPI1.GetChejanData(302);  // 종목명
-                    string jsMMType         = axKHOpenAPI1.GetChejanData(907);  // 매도수구분
+                    string jsMMType         = axKHOpenAPI1.GetChejanData(907);  // 매도수구분 / 1:매도 2:매수
                     string jsCheQwantity    = axKHOpenAPI1.GetChejanData(910);  // 체결가
                     string jsChePrice       = axKHOpenAPI1.GetChejanData(911);  // 체결량
 
-                    Log(string.Format("{0} {1} 체결가 : {2} 체결량 : {3}", jsName, jsMMType, jsCheQwantity, jsChePrice), "[MM-CHE]");
+                    string jsOrderType      = axKHOpenAPI1.GetChejanData(905); // 주문구분 / +매수 -매도
+                    string jsTradeType      = axKHOpenAPI1.GetChejanData(906); // 매매구분 / 시장가
+
+                    Log(string.Format("{0} {1} 체결가 : {2} 체결량 : {3}", jsName.Trim(), jsOrderType, jsCheQwantity, jsChePrice), "[MM-CHE]");
                 }
             }
             else if (e.sGubun.Equals("1")) // 잔고
@@ -73,9 +101,6 @@ namespace HaebiTrader
                 string amount           = axKHOpenAPI1.GetChejanData(930);
                 string buyingPrice      = axKHOpenAPI1.GetChejanData(931);
                 string totalBuyingPrice = axKHOpenAPI1.GetChejanData(932);
-
-                //Log(string.Format("{0} 가격 : {1} 수량 : {2} ", itemName, "[MM-CHE]");
-                //lbxLog.Items.Add(string.Format("종목명 : {0} 현재가 : {1} 보유수량 {2} 매수단가 : {3} 총매입가 {4} ", price, amount, buyingPrice, totalBuyingPrice));
             }
             else if (e.sGubun.Equals("4")) // 파생잔고
             {
@@ -111,7 +136,8 @@ namespace HaebiTrader
                 dtAccount.Rows.Clear();
                 for (int i = 0; i < count; i++)
                 {
-                    // 종목명 | 매입총액 | 평가손익 | 수익률 | 평균단가 | 현재가 | 보유수량
+                    //      0|       1|       2|     3|       4|     5|       6|      7
+                    // 종목명|매입총액|평가손익|수익률|평균단가|현재가|보유수량|종목코드
                     string jm_name          = axKHOpenAPI1.GetCommData(e.sTrCode, e.sRQName, i, "종목명");
                     string jm_cost_buy      = axKHOpenAPI1.GetCommData(e.sTrCode, e.sRQName, i, "매입금액");
                     string jm_evaluate      = axKHOpenAPI1.GetCommData(e.sTrCode, e.sRQName, i, "평가손익");
@@ -119,38 +145,18 @@ namespace HaebiTrader
                     string jm_cost_buy_one  = axKHOpenAPI1.GetCommData(e.sTrCode, e.sRQName, i, "매입가");
                     string jm_cost_now      = axKHOpenAPI1.GetCommData(e.sTrCode, e.sRQName, i, "현재가");
                     string jm_qwantity      = axKHOpenAPI1.GetCommData(e.sTrCode, e.sRQName, i, "보유수량");
-
-                    /*
-                    dtAccount.Rows.Add(new string[] {
-                        jm_name.Trim(),
-                        zTrimInt(jm_cost_buy),
-                        zTrimInt(jm_evaluate),
-                        zTrimFloat(jm_profit_ratio),
-                        zTrimInt(jm_cost_buy_one),
-                        zTrimInt(jm_cost_now),
-                        zTrimInt(jm_qwantity) }); ;
-                    */
+                    string jm_code          = axKHOpenAPI1.GetCommData(e.sTrCode, e.sRQName, i, "종목번호");
 
                     DataRow dr = dtAccount.NewRow();
                     dr[0] = jm_name.Trim();
-                    dr[1] = Convert.ToInt32(jm_cost_buy);
-                    dr[2] = Convert.ToInt32(jm_evaluate);
+                    dr[1] = Convert.ToInt64(jm_cost_buy);
+                    dr[2] = Convert.ToInt64(jm_evaluate);
                     dr[3] = Convert.ToDouble(jm_profit_ratio);
-                    dr[4] = Convert.ToInt32(jm_cost_buy_one);
-                    dr[5] = Convert.ToInt32(jm_cost_now);
-                    dr[6] = Convert.ToInt32(jm_qwantity);
+                    dr[4] = Convert.ToInt64(jm_cost_buy_one);
+                    dr[5] = Convert.ToInt64(jm_cost_now);
+                    dr[6] = Convert.ToInt64(jm_qwantity);
+                    dr[7] = jm_code.Trim(); // trim이 필요한지는 확인 필요.
                     dtAccount.Rows.Add(dr);
-
-                    /*
-                    dtAccount.Rows.Add(new object[] {
-                        jm_name.Trim(),
-                        Convert.ToInt32(jm_cost_buy),
-                        Convert.ToInt32(jm_evaluate),
-                        Convert.ToDouble(jm_profit_ratio),
-                        Convert.ToInt32(jm_cost_buy_one),
-                        Convert.ToInt32(jm_cost_now),
-                        Convert.ToInt32(jm_qwantity) }); ;
-                    */
                 }
             }
         }
@@ -236,6 +242,40 @@ namespace HaebiTrader
                     Log(string.Format("주문 요청 실패 : {0}", result), "[API]");
                 }
             }
+            else if (sender.Equals(btn3))
+            {
+                /*
+                 * SetRealReg() 파라메터
+                 * 최대 가능 종목 수 = SetRealReg 1개 = FID
+                 * FID 100개 까지, FID당 종목 100개 까지 = 최대 10,000 개 까지 설정 가능.
+                 * 
+                 * 1. 스크린넘버 1001 (자동 생성 스크린넘버는 1100-9999 범위에서 사용, API 규격은 0001-9999 까지)
+                 * 2. jm_list 에 종목 목록이 들어간다. 다건인 경우 구분자; 포함 (최대 100개)
+                 *      예) 009630;009631;...
+                 * 3. 9001 종목코드,업종코드
+                 *    10 현재가
+                 *    11 전일대비
+                 *    12 등락율
+                 * 4. 0 기존목록(있다면) 해지 후 다시 등록 / 1 기존목록 + 추가 등록 시
+                 * 
+                 */
+
+                string jm_list = "";
+
+                foreach(DataRow r in dtAccount.Rows)
+                {
+                    if ("".Equals(jm_list))
+                        jm_list += r["C8"].ToString().Replace("A", "");
+                    else
+                    {
+                        jm_list += ";";
+                        jm_list += r["C8"].ToString().Replace("A", "");
+                    }
+                }
+
+                int result = axKHOpenAPI1.SetRealReg("1001", jm_list, "9001;10;11;12", "0");
+
+            }
         }
 
         // ----------------------------------------------------------------------------------------------------
@@ -319,12 +359,13 @@ namespace HaebiTrader
         private void initAccount()
         {
             dtAccount.Columns.Add("C1"); // 종목명
-            dtAccount.Columns.Add("C2", typeof(Int32)); // 매입총액
-            dtAccount.Columns.Add("C3", typeof(Int32)); // 평가손익
+            dtAccount.Columns.Add("C2", typeof(long)); // 매입총액
+            dtAccount.Columns.Add("C3", typeof(long)); // 평가손익
             dtAccount.Columns.Add("C4", typeof(double)); // 수익률
-            dtAccount.Columns.Add("C5", typeof(Int32)); // 평균단가
-            dtAccount.Columns.Add("C6", typeof(Int32)); // 현재가
-            dtAccount.Columns.Add("C7", typeof(Int32)); // 보유수량
+            dtAccount.Columns.Add("C5", typeof(long)); // 평균단가
+            dtAccount.Columns.Add("C6", typeof(long)); // 현재가
+            dtAccount.Columns.Add("C7", typeof(long)); // 보유수량
+            dtAccount.Columns.Add("C8"); // 종목코드
 
             dgvAccount.DataSource = dtAccount;
             dgvAccount.Columns[0].HeaderText = "종목명";
@@ -334,7 +375,11 @@ namespace HaebiTrader
             dgvAccount.Columns[4].HeaderText = "평균단가";
             dgvAccount.Columns[5].HeaderText = "현재가";
             dgvAccount.Columns[6].HeaderText = "보유수량";
-        
+            dgvAccount.Columns[7].HeaderText = "종목코드";
+
+            // 소수점 2번째 자리 강제 표시
+            dgvAccount.Columns[3].DefaultCellStyle.Format = "0.00";
+
             dgvAccount.RowHeadersVisible = false;
             dgvAccount.AllowUserToAddRows = false;
             dgvAccount.ReadOnly = true;
@@ -382,7 +427,7 @@ namespace HaebiTrader
 
         private string zTrimInt(string strInt)
         {
-            return Convert.ToInt32(strInt).ToString();
+            return Convert.ToInt64(strInt).ToString();
         }
 
         private string zTrimFloat(string strFloat)
@@ -392,18 +437,18 @@ namespace HaebiTrader
 
         private string strMinus(string strInt1, string strInt2)
         {
-            return (Convert.ToInt32(strInt1) - Convert.ToInt32(strInt2)).ToString();
+            return (Convert.ToInt64(strInt1) - Convert.ToInt64(strInt2)).ToString();
         }
 
         private string strDevide(string strInt1, string strInt2)
         {
-            return (Convert.ToInt32(strInt1) / Convert.ToInt32(strInt2)).ToString();
+            return (Convert.ToInt64(strInt1) / Convert.ToInt64(strInt2)).ToString();
         }
 
         private string getScreenNo()
         {
             if (screenNo >= 9999)
-                screenNo = 1000;
+                screenNo = 1100;
 
             screenNo++;
 
@@ -446,15 +491,29 @@ namespace HaebiTrader
             }
         }
 
-        private void dgvAccount_SortCompare(object sender, DataGridViewSortCompareEventArgs e)
+        private void updatePrice(DataRow row, long price)
         {
-            int a = int.Parse(e.CellValue1.ToString()), b = int.Parse(e.CellValue2.ToString());
+            //      0|       1|       2|     3|       4|     5|       6|      7
+            // 종목명|매입총액|평가손익|수익률|평균단가|현재가|보유수량|종목코드
 
-            // If the cell value is already an integer, just cast it instead of parsing
+            // 현재가
+            row["C6"] = price;
+            long price_now = (long)row["C6"];
 
-            e.SortResult = a.CompareTo(b);
+            // 평균단가
+            long price_avg = (long)row["C5"];
 
-            e.Handled = true;
+            // 수량
+            long qty = (long)row["C7"];
+
+            // 평가손익 = (현재가 - 평균단가) x 보유수량
+            long eval = (price_now - price_avg) * qty;
+            row["C3"] = eval;
+
+            // 수익률 = ((현재가 / 평균단가) - 1) * 100
+            double profit_ratio = (((double)price_now / (double)price_avg) - 1) * 100;
+            profit_ratio = Math.Round(profit_ratio, 2);
+            row["C4"] = profit_ratio;
         }
     }
 }

@@ -31,7 +31,7 @@
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(HaebiMain));
             this.axKHOpenAPI1 = new AxKHOpenAPILib.AxKHOpenAPI();
             this.btnLogin = new System.Windows.Forms.Button();
-            this.txtLog = new System.Windows.Forms.TextBox();
+            this.txtLog = new System.Windows.Forms.RichTextBox();
             this.btn1 = new System.Windows.Forms.Button();
             this.cboAccount = new System.Windows.Forms.ComboBox();
             this.label1 = new System.Windows.Forms.Label();
@@ -39,6 +39,7 @@
             this.btn2 = new System.Windows.Forms.Button();
             this.dgvAccount = new System.Windows.Forms.DataGridView();
             this.groupBox1 = new System.Windows.Forms.GroupBox();
+            this.btnOrder = new System.Windows.Forms.Button();
             this.nudOrderPrice = new System.Windows.Forms.NumericUpDown();
             this.nudOrderQuantity = new System.Windows.Forms.NumericUpDown();
             this.txtOriOrderNo = new System.Windows.Forms.TextBox();
@@ -50,9 +51,9 @@
             this.label5 = new System.Windows.Forms.Label();
             this.label4 = new System.Windows.Forms.Label();
             this.label3 = new System.Windows.Forms.Label();
-            this.label2 = new System.Windows.Forms.Label();
-            this.btnOrder = new System.Windows.Forms.Button();
             this.label8 = new System.Windows.Forms.Label();
+            this.label2 = new System.Windows.Forms.Label();
+            this.btn3 = new System.Windows.Forms.Button();
             ((System.ComponentModel.ISupportInitialize)(this.axKHOpenAPI1)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.dgvAccountOverall)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.dgvAccount)).BeginInit();
@@ -83,10 +84,10 @@
             // txtLog
             // 
             this.txtLog.Location = new System.Drawing.Point(12, 482);
-            this.txtLog.Multiline = true;
             this.txtLog.Name = "txtLog";
             this.txtLog.Size = new System.Drawing.Size(855, 149);
             this.txtLog.TabIndex = 2;
+            this.txtLog.Text = "";
             // 
             // btn1
             // 
@@ -142,7 +143,6 @@
             this.dgvAccount.RowTemplate.Height = 23;
             this.dgvAccount.Size = new System.Drawing.Size(853, 322);
             this.dgvAccount.TabIndex = 6;
-            this.dgvAccount.SortCompare += new System.Windows.Forms.DataGridViewSortCompareEventHandler(this.dgvAccount_SortCompare);
             // 
             // groupBox1
             // 
@@ -165,6 +165,16 @@
             this.groupBox1.Size = new System.Drawing.Size(227, 532);
             this.groupBox1.TabIndex = 7;
             this.groupBox1.TabStop = false;
+            // 
+            // btnOrder
+            // 
+            this.btnOrder.Location = new System.Drawing.Point(14, 195);
+            this.btnOrder.Name = "btnOrder";
+            this.btnOrder.Size = new System.Drawing.Size(192, 32);
+            this.btnOrder.TabIndex = 8;
+            this.btnOrder.Text = "주문";
+            this.btnOrder.UseVisualStyleBackColor = true;
+            this.btnOrder.Click += new System.EventHandler(this.Button_Click);
             // 
             // nudOrderPrice
             // 
@@ -266,6 +276,15 @@
             this.label3.TabIndex = 4;
             this.label3.Text = "주문유형";
             // 
+            // label8
+            // 
+            this.label8.AutoSize = true;
+            this.label8.Location = new System.Drawing.Point(12, 251);
+            this.label8.Name = "label8";
+            this.label8.Size = new System.Drawing.Size(109, 12);
+            this.label8.TabIndex = 4;
+            this.label8.Text = "* 삼성전자(005930)";
+            // 
             // label2
             // 
             this.label2.AutoSize = true;
@@ -275,24 +294,15 @@
             this.label2.TabIndex = 4;
             this.label2.Text = "종목코드";
             // 
-            // btnOrder
+            // btn3
             // 
-            this.btnOrder.Location = new System.Drawing.Point(14, 195);
-            this.btnOrder.Name = "btnOrder";
-            this.btnOrder.Size = new System.Drawing.Size(192, 32);
-            this.btnOrder.TabIndex = 8;
-            this.btnOrder.Text = "주문";
-            this.btnOrder.UseVisualStyleBackColor = true;
-            this.btnOrder.Click += new System.EventHandler(this.Button_Click);
-            // 
-            // label8
-            // 
-            this.label8.AutoSize = true;
-            this.label8.Location = new System.Drawing.Point(12, 251);
-            this.label8.Name = "label8";
-            this.label8.Size = new System.Drawing.Size(109, 12);
-            this.label8.TabIndex = 4;
-            this.label8.Text = "* 삼성전자(005930)";
+            this.btn3.Location = new System.Drawing.Point(389, 12);
+            this.btn3.Name = "btn3";
+            this.btn3.Size = new System.Drawing.Size(119, 34);
+            this.btn3.TabIndex = 1;
+            this.btn3.Text = "실시간수신";
+            this.btn3.UseVisualStyleBackColor = true;
+            this.btn3.Click += new System.EventHandler(this.Button_Click);
             // 
             // HaebiMain
             // 
@@ -305,6 +315,7 @@
             this.Controls.Add(this.label1);
             this.Controls.Add(this.cboAccount);
             this.Controls.Add(this.txtLog);
+            this.Controls.Add(this.btn3);
             this.Controls.Add(this.btn2);
             this.Controls.Add(this.btn1);
             this.Controls.Add(this.btnLogin);
@@ -328,7 +339,7 @@
 
         private AxKHOpenAPILib.AxKHOpenAPI axKHOpenAPI1;
         private System.Windows.Forms.Button btnLogin;
-        private System.Windows.Forms.TextBox txtLog;
+        private System.Windows.Forms.RichTextBox txtLog;
         private System.Windows.Forms.Button btn1;
         private System.Windows.Forms.ComboBox cboAccount;
         private System.Windows.Forms.Label label1;
@@ -350,6 +361,7 @@
         private System.Windows.Forms.Label label2;
         private System.Windows.Forms.Button btnOrder;
         private System.Windows.Forms.Label label8;
+        private System.Windows.Forms.Button btn3;
     }
 }
 
